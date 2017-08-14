@@ -1,11 +1,49 @@
 <html>
     <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <style>
+            button {
+                width: 50vw;
+                height: 50vh;
+                margin: auto;
+                display: block;
+            }
+
+            #pitch {
+                font-size: 5em;
+                font-weight: bold;
+                text-align: center;
+            }
+
+            #freq {
+                text-align: center;
+            }
+
+            #volume {
+                bottom: 0;
+                position: absolute;
+                left: 0;
+                right: 0;
+                z-index: -1;
+            }
+        </style>
     </head>
     <body>
-        <h1>Hello world!</h1>
-        <div id="foo">
+        <div id="volume"></div>
+        <div id="pitch"></div>
+        <div id="freq"></div>
+        <div id="scale">
+            <div>A</div>
+            <div>B</div>
+            <div>C</div>
+            <div>D</div>
+            <div>E</div>
+            <div>F</div>
+            <div>G</div>
         </div>
         <script>
+
+var notes = ["A", "B", "C", "D", "E", "F", "G"];
 
 function handleOrientation(event) {
     var absolute = event.absolute;
@@ -13,36 +51,52 @@ function handleOrientation(event) {
     var beta = event.beta;
     var gamma = event.gamma;
 
-    const foo = document.querySelector("#foo");
 
     // alpha is phone "angle" relative to the floor
     // beta is phone up down, -90 -> 90
     // gamma is phone tilt (left/right), -90 -> 90
 
     const volume = Math.min(1, Math.abs(beta) / 90);
-    const pitch = 440 * Math.pow(2, (gamma + 90) / 180);
-    foo.textContent = `${absolute}, ${alpha}, ${beta}, ${gamma}`;
+    const normPitch = Math.max(0, Math.min(1, (gamma + 90) / 180));
+    const pitchIndex = Math.floor(normPitch * notes.length);
+    const pitch = 440 * Math.pow(2, normPitch);
+
+    const hue = normPitch * 360;
+
+    document.querySelector("#volume").style.top = `${volume.toFixed(2) * 100}%`;
+    document.querySelector("#volume").style.background = `hsl(${hue}, 100%, 50%)`;
+    document.querySelector("#pitch").textContent = `Note: ${notes[pitchIndex]}`;
+    document.querySelector("#freq").textContent = `${pitch.toFixed(0)} Hz`;
+
+
     updateTheremin(volume, pitch);
 }
 
+var gainNode;
+var oscillator;
+var audioCtx;
+
 function updateTheremin(volume, pitch) {
-    gainNode.gain = volume;
-    oscillator.frequency = pitch;
+    gainNode.gain.value = volume;
+    oscillator.frequency.value = pitch;
 }
 
 
 function start() {
-    var audioCtx = new (window.AudioContext || window.webkitAudioContext)(); // define audio context
+    if (audioCtx != null) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)(); // define audio context
 
-    var gainNode = audioCtx.createGain();
+    gainNode = audioCtx.createGain();
 
-    var oscillator = audioCtx.createOscillator();
-    oscillator.type = 'square';
+    oscillator = audioCtx.createOscillator();
+    oscillator.type = 'sine';
     oscillator.frequency.value = 440; // value in hertz
     oscillator.connect(gainNode);
     gainNode.connect(audioCtx.destination);
 
     oscillator.start();
+
+    document.querySelector("button").style.display = "none";
 
     window.addEventListener("deviceorientation", handleOrientation, true);
 }
