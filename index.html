@@ -1,0 +1,54 @@
+<html>
+    <head>
+    </head>
+    <body>
+        <h1>Hello world!</h1>
+        <div id="foo">
+        </div>
+        <script>
+
+function handleOrientation(event) {
+    var absolute = event.absolute;
+    var alpha = event.alpha;
+    var beta = event.beta;
+    var gamma = event.gamma;
+
+    const foo = document.querySelector("#foo");
+
+    // alpha is phone "angle" relative to the floor
+    // beta is phone up down, -90 -> 90
+    // gamma is phone tilt (left/right), -90 -> 90
+
+    const volume = Math.min(1, Math.abs(beta) / 90);
+    const pitch = 440 * Math.pow(2, (gamma + 90) / 180);
+    foo.textContent = `${absolute}, ${alpha}, ${beta}, ${gamma}`;
+    updateTheremin(volume, pitch);
+}
+
+function updateTheremin(volume, pitch) {
+    gainNode.gain = volume;
+    oscillator.frequency = pitch;
+}
+
+
+function start() {
+    var audioCtx = new (window.AudioContext || window.webkitAudioContext)(); // define audio context
+
+    var gainNode = audioCtx.createGain();
+
+    var oscillator = audioCtx.createOscillator();
+    oscillator.type = 'square';
+    oscillator.frequency.value = 440; // value in hertz
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.start();
+
+    window.addEventListener("deviceorientation", handleOrientation, true);
+}
+
+
+</script>
+<button onclick="start()">Start!</button>
+    </body>
+</html>
