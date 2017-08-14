@@ -63,29 +63,49 @@ function handleOrientation(event) {
     updateTheremin(volume, pitch);
 }
 
-var gainNode;
-var oscillator;
-var audioCtx;
-
 function updateTheremin(volume, pitch) {
-    gainNode.gain.value = volume;
-    oscillator.frequency.value = pitch;
+    masterGain.gain.value = volume * 0.8;
+    overtone1Gain.gain.value = volume * 0.1;
+    overtone2Gain.gain.value = volume * 0.2;
+    overtone3Gain.gain.value = volume * 0.1;
+
+    fundamental.frequency.value = pitch;
+    overtone1.frequency.value = pitch * 2;
+    overtone2.frequency.value = pitch * 3;
+    overtone3.frequency.value = pitch * 4;
 }
 
+var audioCtx;
 
 function start() {
     if (audioCtx != null) return;
     audioCtx = new (window.AudioContext || window.webkitAudioContext)(); // define audio context
 
-    gainNode = audioCtx.createGain();
+    fundamental = audioCtx.createOscillator();
+    fundamental.type = "triangle";
+    overtone1 = audioCtx.createOscillator();
+    overtone2 = audioCtx.createOscillator();
+    overtone3 = audioCtx.createOscillator();
 
-    oscillator = audioCtx.createOscillator();
-    oscillator.type = 'sine';
-    oscillator.frequency.value = 440; // value in hertz
-    oscillator.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
+    overtone1Gain = audioCtx.createGain();
+    overtone2Gain = audioCtx.createGain();
+    overtone3Gain = audioCtx.createGain();
+    masterGain = audioCtx.createGain();
 
-    oscillator.start();
+    fundamental.connect(masterGain);
+    overtone1.connect(overtone1Gain);
+    overtone2.connect(overtone2Gain);
+    overtone3.connect(overtone3Gain);
+    overtone1Gain.connect(masterGain);
+    overtone2Gain.connect(masterGain);
+    overtone3Gain.connect(masterGain);
+    masterGain.connect(audioCtx.destination);
+
+    fundamental.start();
+    overtone1.start();
+    overtone2.start();
+    overtone3.start();
+
 
     document.querySelector("button").style.display = "none";
 
