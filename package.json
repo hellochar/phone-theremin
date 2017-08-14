@@ -1,0 +1,7 @@
+{
+  "name": "phone-theremin",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Xiaohan Zhang <xzhang@palantir.com>",
+  "license": "MIT"
+}
