@@ -34,7 +34,8 @@
         <div id="freq"></div>
         <script>
 
-var notes = ["A", "B", "C", "D", "E", "F", "G"];
+var notes = ["A", "B", "C", "D", "E", "F", "G", "A"];
+var notePitches = [440, 493.9, 523.3, 587.3, 659.3, 698.5, 784, 880];
 
 function handleOrientation(event) {
     var absolute = event.absolute;
@@ -49,21 +50,33 @@ function handleOrientation(event) {
 
     const volume = Math.min(1, Math.abs(beta) / 90);
     const normPitch = Math.max(0, Math.min(1, (gamma + 90) / 180));
-    const pitchIndex = Math.floor(normPitch * notes.length);
     const pitch = 440 * Math.pow(2, normPitch);
+    var min = Number.MAX_VALUE;
+    var note;
+    var pitchIndex;
+    var diff;
+    for (var i = 0; i < notes.length; i++) {
+        diff = Math.abs(pitch - notePitches[i]);
+        if (diff < min) {
+            min = diff;
+            note = notePitches[i];
+            pitchIndex = i;
+        }
+    }
 
     const hue = normPitch * 360;
 
     document.querySelector("#volume").style.top = `${volume.toFixed(2) * 100}%`;
     document.querySelector("#volume").style.background = `hsl(${hue}, 100%, 50%)`;
     document.querySelector("#pitch").textContent = `Note: ${notes[pitchIndex]}`;
-    document.querySelector("#freq").textContent = `${pitch.toFixed(0)} Hz`;
+    document.querySelector("#freq").textContent = `${note} Hz`;
 
 
-    updateTheremin(volume, pitch);
+    updateTheremin(volume, note);
 }
 
 function updateTheremin(volume, pitch) {
+    if (!pitch) return;
     masterGain.gain.value = volume * 0.8;
     overtone1Gain.gain.value = volume * 0.1;
     overtone2Gain.gain.value = volume * 0.2;
