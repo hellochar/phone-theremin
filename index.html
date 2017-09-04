@@ -143,12 +143,12 @@ function start() {
     window.addEventListener("deviceorientation", handleOrientation, true);
 
     window.addEventListener("touchstart", function() {
-        numTouches++;
+        numTouches = 1;
         recomputeValuesFromEvent(lastEvent);
     });
 
     window.addEventListener("touchend", function() {
-        numTouches = Math.max(numTouches - 1, 0);
+        numTouches = 0;
         recomputeValuesFromEvent(lastEvent);
     });
 }
