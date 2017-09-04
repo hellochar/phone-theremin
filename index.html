@@ -34,29 +34,60 @@
         <div id="freq"></div>
         <script>
 
-var notes = ["A", "B", "C", "D", "E", "F", "G"];
+var notes = [
+    "A",
+    "A#",
+    "B",
+    "C",
+    "C#",
+    "D",
+    "D#",
+    "E",
+    "F",
+    "F#",
+    "G",
+    "G#"
+    ];
+
+var lastEvent;
 
 function handleOrientation(event) {
+    lastEvent = event;
+    recomputeValuesFromEvent(lastEvent);
+}
+
+function recomputeValuesFromEvent(event) {
     var absolute = event.absolute;
     var alpha = event.alpha;
     var beta = event.beta;
     var gamma = event.gamma;
-
-
     // alpha is phone "angle" relative to the floor
     // beta is phone up down, -90 -> 90
     // gamma is phone tilt (left/right), -90 -> 90
 
     const volume = Math.min(1, Math.abs(beta) / 90);
+    // [0 -> 1]
     const normPitch = Math.max(0, Math.min(1, (gamma + 90) / 180));
-    const pitchIndex = Math.floor(normPitch * notes.length);
-    const pitch = 440 * Math.pow(2, normPitch);
+    // [0 -> 12]
+    const pitchIndex = normPitch * notes.length;
+    // pitch index fractional [0 -> 1]
+    const t = pitchIndex - Math.floor(pitchIndex);
+    // [0 -> 1]
+    const lerpedPitchIndexFrac = t*t*t*(t*(t*6 - 15) + 10);
+    // go towards round numbers: [0 -> 11] + [0 -> 1]
+    const adjustedPitchIndex = Math.floor(pitchIndex) + lerpedPitchIndexFrac;
+    // [0 -> 1]
+    const adjustedNormPitch = adjustedPitchIndex / notes.length;
+    const adjustedNormPitchWithOctave = adjustedNormPitch + numTouches;
+    const pitch = 440 * Math.pow(2, adjustedNormPitchWithOctave);
 
-    const hue = normPitch * 360;
+    const hue = adjustedNormPitch * 360;
+
+    const adjustedPitchIndexFloor = Math.floor(adjustedPitchIndex);
 
     document.querySelector("#volume").style.top = `${volume.toFixed(2) * 100}%`;
     document.querySelector("#volume").style.background = `hsl(${hue}, 100%, 50%)`;
-    document.querySelector("#pitch").textContent = `Note: ${notes[pitchIndex]}`;
+    document.querySelector("#pitch").textContent = `Note: ${notes[adjustedPitchIndexFloor]}`;
     document.querySelector("#freq").textContent = `${pitch.toFixed(0)} Hz`;
 
 
@@ -76,6 +107,7 @@ function updateTheremin(volume, pitch) {
 }
 
 var audioCtx;
+var numTouches = 0;
 
 function start() {
     if (audioCtx != null) return;
@@ -106,10 +138,19 @@ function start() {
     overtone2.start();
     overtone3.start();
 
-
     document.querySelector("button").style.display = "none";
 
     window.addEventListener("deviceorientation", handleOrientation, true);
+
+    window.addEventListener("touchstart", function() {
+        numTouches++;
+        recomputeValuesFromEvent(lastEvent);
+    });
+
+    window.addEventListener("touchend", function() {
+        numTouches = Math.max(numTouches - 1, 0);
+        recomputeValuesFromEvent(lastEvent);
+    });
 }
 
 
