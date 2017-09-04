@@ -56,6 +56,10 @@ function handleOrientation(event) {
     recomputeValuesFromEvent(lastEvent);
 }
 
+function nonLinearVolume(x) {
+    return Math.sqrt(Math.max(0, x * 2 - 0.4)) / Math.sqrt(1 * 2 - 0.4);
+}
+
 function recomputeValuesFromEvent(event) {
     var absolute = event.absolute;
     var alpha = event.alpha;
@@ -65,30 +69,35 @@ function recomputeValuesFromEvent(event) {
     // beta is phone up down, -90 -> 90
     // gamma is phone tilt (left/right), -90 -> 90
 
-    const volume = Math.min(1, Math.abs(beta) / 90);
+    const betaNorm = Math.min(1, Math.abs(beta) / 90);
+    const volume = nonLinearVolume(betaNorm);
+
     // [0 -> 1]
     const normPitch = Math.max(0, Math.min(1, (gamma + 90) / 180));
     // [0 -> 12]
     const pitchIndex = normPitch * notes.length;
+    const wantedPitchIndex = Math.round(pitchIndex);
     // pitch index fractional [0 -> 1]
-    const t = pitchIndex - Math.floor(pitchIndex);
+    const t = pitchIndex - wantedPitchIndex;
     // [0 -> 1]
     const lerpedPitchIndexFrac = t*t*t*(t*(t*6 - 15) + 10);
     // go towards round numbers: [0 -> 11] + [0 -> 1]
-    const adjustedPitchIndex = Math.floor(pitchIndex) + lerpedPitchIndexFrac;
+    const adjustedPitchIndex = wantedPitchIndex + lerpedPitchIndexFrac;
     // [0 -> 1]
     const adjustedNormPitch = adjustedPitchIndex / notes.length;
     const adjustedNormPitchWithOctave = adjustedNormPitch + numTouches;
     const pitch = 440 * Math.pow(2, adjustedNormPitchWithOctave);
 
+    const wantedPitch = 440 * Math.pow(2, wantedPitchIndex / notes.length + numTouches);
+    const wantedPitchOffset = Math.round(pitch - wantedPitch);
+    const wantedPitchOffsetString = ((wantedPitchOffset > 0) ? "+" : "") + wantedPitchOffset.toFixed(0);
+
     const hue = adjustedNormPitch * 360;
 
-    const adjustedPitchIndexFloor = Math.floor(adjustedPitchIndex);
-
-    document.querySelector("#volume").style.top = `${volume.toFixed(2) * 100}%`;
+    document.querySelector("#volume").style.top = `${(1 - volume).toFixed(2) * 100}%`;
     document.querySelector("#volume").style.background = `hsl(${hue}, 100%, 50%)`;
-    document.querySelector("#pitch").textContent = `Note: ${notes[adjustedPitchIndexFloor]}`;
-    document.querySelector("#freq").textContent = `${pitch.toFixed(0)} Hz`;
+    document.querySelector("#pitch").textContent = `Note: ${notes[wantedPitchIndex]}`;
+    document.querySelector("#freq").textContent = `${pitch.toFixed(0)} (${wantedPitchOffsetString}) Hz`;
 
 
     updateTheremin(volume, pitch);
